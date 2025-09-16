@@ -12,7 +12,7 @@ export const EXTRACT_CHAPTER_FACTS_SYSTEM_MESSAGE = `You are an expert at extrac
 ## Output Format:
 Return ONLY a JSON array of strings, where each string is a fact. Do not include any other text, explanations, or formatting.
 
-Example:
+Example (fact length can vary by alot based on content density - do not sacrifice quality for length):
 [
   "The author discusses the importance of creative thinking in problem-solving",
   "Chapter 3 introduces the concept of iterative design processes",
@@ -21,7 +21,7 @@ Example:
 ]
 
 ## Guidelines:
-- Extract 10-30 facts per chapter (adjust based on chapter length and content density)
+- Extract 10-100 facts per chapter (adjust based on chapter length and content density)
 - Focus on substantive information, not minor details
 - Preserve the original meaning and context
 - Avoid personal opinions or interpretations
