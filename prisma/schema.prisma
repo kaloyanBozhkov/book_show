@@ -83,10 +83,11 @@ model chapter {
 }
 
 model fact {
-    id         String   @id @default(cuid())
-    text       String
-    created_at DateTime @default(now())
-    updated_at DateTime @default(now()) @updatedAt
+    id          String   @id @default(cuid())
+    text        String
+    page_number Int? // Page number where the fact was extracted from
+    created_at  DateTime @default(now())
+    updated_at  DateTime @default(now()) @updatedAt
 
     // Foreign keys and relations
     embedding_id String

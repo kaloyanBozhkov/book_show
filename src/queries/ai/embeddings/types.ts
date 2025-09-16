@@ -1,4 +1,4 @@
-import type { ai_cached_embedding, embedding_feature_type } from "~/prisma/client";
+import type { ai_cached_embedding, embedding_feature_type } from "@prisma/client";
 
 // Type for cached embedding with parsed vector
 export type CachedEmbeddingWithVector = Omit<ai_cached_embedding, 'embedding'> & {

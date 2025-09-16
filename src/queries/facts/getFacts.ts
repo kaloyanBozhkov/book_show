@@ -1,6 +1,6 @@
 import { prisma } from "../prisma";
 import type { FactWithEmbedding } from "./types";
-import type { Prisma } from "~/prisma/client";
+import type { Prisma } from "@prisma/client";
 
 export const getFacts = async (chapterId: string, texts?: string[]): Promise<FactWithEmbedding[]> => {
   const whereClause: Prisma.factWhereInput = {

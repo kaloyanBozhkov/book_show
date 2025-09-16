@@ -5,7 +5,7 @@ import { createCachedEmbedding } from "@/queries/ai/embeddings/createCachedEmbed
 import { getManyCachedEmbeddings } from "@/queries/ai/embeddings/getManyCachedEmbeddings";
 import type { CachedEmbeddingWithVector, CreatedCachedEmbedding } from "@/queries/ai/embeddings/types";
 import { vectorize } from "@/helpers/sql";
-import { embedding_feature_type } from "~/prisma/client";
+import { embedding_feature_type } from "@prisma/client";
 
 export const generateVectorEmbeddings = async (
   text: string,

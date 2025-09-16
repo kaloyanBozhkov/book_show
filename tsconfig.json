@@ -25,7 +25,6 @@
     "types": ["node"],
     "paths": {
       "@/*": ["src/*"],
-      "~/prisma/*": ["prisma/client/*"]
     }
   },
   "include": ["src/**/*", "prisma/client/**/*"],

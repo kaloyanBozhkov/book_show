@@ -3,6 +3,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { extractFactsFromChapter } from "./ai/extractFacts";
 import { getChapterMemory } from "./ai/memory";
+import { extractFactPageNumbers } from "./ai/extractFactPageNumbers";
+import { updateFactPageNumbersForChapter } from "./queries/facts/updateFactPageNumbers";
 import { prisma } from "./queries/prisma";
 
 export interface BookIndexEntry {
@@ -396,6 +398,19 @@ export async function processChapter(
     const storedFacts = await memory.addFacts(chapter.id, factResult.facts);
 
     console.log(`✅ Stored ${storedFacts.length} facts in database`);
+
+    // Extract page numbers for the facts
+    console.log("🔍 Extracting page numbers for facts...");
+    const factTexts = factResult.facts;
+    const pageMapping = await extractFactPageNumbers(factTexts, chapterContent);
+    
+    if (Object.keys(pageMapping).length > 0) {
+      const updatedCount = await updateFactPageNumbersForChapter(chapter.id, pageMapping);
+      console.log(`✅ Updated page numbers for ${updatedCount} facts`);
+    } else {
+      console.log("⚠️ No page numbers could be extracted for facts");
+    }
+
     console.log(`📊 Chapter processed successfully: ${chapterEntry.title}`);
 
     return true;

@@ -13,7 +13,7 @@ import {
   deleteAllFactsQuery,
 } from "../queries/facts/deleteFact";
 import { updateFactQuery } from "../queries/facts/updateFact";
-import { fact } from "~/prisma/client";
+import { fact } from "@prisma/client";
 import { getFacts } from "../queries/facts/getFacts";
 import type { FactWithEmbedding } from "../queries/facts/types";
 

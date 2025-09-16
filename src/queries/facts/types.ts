@@ -1,4 +1,4 @@
-import type { fact, ai_cached_embedding, chapter, book } from "~/prisma/client";
+import type { fact, ai_cached_embedding, chapter, book } from "@prisma/client";
 
 // Type for fact with embedding and chapter context
 export type FactWithEmbedding = fact & {
@@ -14,6 +14,7 @@ export type FactWithEmbedding = fact & {
 export type FactWithContext = {
   id: string;
   text: string;
+  page_number: number | null;
   created_at: Date;
   updated_at: Date;
   embedding_id: string;
@@ -34,6 +35,7 @@ export type FactWithContext = {
 export type FactSearchResult = {
   id: string;
   text: string;
+  page_number: number | null;
   similarity: number;
   chapter: {
     id: string;
@@ -51,6 +53,7 @@ export type FactSearchResult = {
 export type RawSearchResult = {
   id: string;
   text: string;
+  page_number: number | null;
   similarity: number;
   chapter_id: string;
   chapter_title: string;

@@ -1,5 +1,5 @@
 import { prisma } from "@/queries/prisma";
-import { Prisma } from "~/prisma/client";
+import { Prisma } from "@prisma/client";
 import type { CachedEmbeddingWithVector, RawCachedEmbedding } from "./types";
 
 export const getCachedEmbedding = async (text: string): Promise<CachedEmbeddingWithVector | null> => {

@@ -1,4 +1,4 @@
-import { Prisma } from "~/prisma/client";
+import { Prisma } from "@prisma/client";
 
 export const enquote = (text: string) =>
   Prisma.raw(`'${text.replace(/'/g, "''")}'`);

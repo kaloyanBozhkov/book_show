@@ -1,6 +1,6 @@
 import { prisma } from "../prisma";
 import { TextEmbedding } from "../../ai/embeddings";
-import type { fact } from "~/prisma/client";
+import type { fact } from "@prisma/client";
 
 export const updateFactQuery = async ({
   factId,

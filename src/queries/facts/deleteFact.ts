@@ -1,6 +1,6 @@
 import { prisma } from "../prisma";
-import type { fact } from "~/prisma/client";
-import type { Prisma } from "~/prisma/client";
+import type { fact } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
 export const deleteFactQuery = async ({
   factId,

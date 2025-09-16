@@ -41,6 +41,7 @@ export const searchFactsQuery = async ({
     SELECT 
       f.id,
       f.text,
+      f.page_number,
       ${similarityExpression} as similarity,
       c.id as chapter_id,
       c.title as chapter_title,
@@ -66,6 +67,7 @@ export const searchFactsQuery = async ({
   const formattedFacts = facts.map((fact: RawSearchResult) => ({
     id: fact.id,
     text: fact.text,
+    page_number: fact.page_number,
     similarity: fact.similarity,
     chapter: {
       id: fact.chapter_id,

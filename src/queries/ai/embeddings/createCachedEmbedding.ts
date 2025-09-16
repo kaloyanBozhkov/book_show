@@ -1,6 +1,6 @@
 import { enquote, vectorize } from "@/helpers/sql";
 import { createId } from "@paralleldrive/cuid2";
-import { embedding_feature_type, Prisma } from "~/prisma/client";
+import { embedding_feature_type, Prisma } from "@prisma/client";
 import { prisma } from "@/queries/prisma";
 import type { CreatedCachedEmbedding } from "./types";
 
