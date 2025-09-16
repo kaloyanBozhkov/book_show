@@ -1,0 +1,139 @@
+// Rules:
+// - model name always singular
+// - array property name always plural (1 to many)
+// - models and field snake_case, because postgres does not like uppercase (makes everything lowecase)
+// - model and field mapping (aliasing), to be avoided, because there is no corresponding field in the db
+// - foreign keys, must be `(name of target model)_id` e.g. `book_id` and the object called like the target model e.g. `book`
+// - field groups, core fields at the top (id, uuid, etc) then the actual fields A-Z, then the relations/foreign keys, then indexes
+// - Prefer prisma (DB) enums where the type is known a priori, instead of the classic integer mapped to a code enum
+// - all external ids must be prefixed by `external_` e.g. `external_isbn`
+// - counts and booleans should have a default value, to avoid nulls (useful for filtering)
+// - many to many, call relation `to_(name of target model in plural)` e.g. `to_books` where there is a relation between `book` and `category` and the relation is called `book_to_category`
+
+generator client {
+    provider        = "prisma-client-js"
+    previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+    provider   = "postgresql"
+    url        = env("DATABASE_URL")
+    extensions = [pgvector(map: "vector", schema: "linkbase")]
+}
+
+enum vector_similarity_type {
+    COSINE
+    L2_DISTANCE
+    INNER_PRODUCT
+
+    @@map("vector_similarity_type")
+}
+
+enum ai_feature {
+    QUERY_EXPANSION
+    FACT_EXTRACTION
+    CHAPTER_SUMMARIZATION
+}
+
+enum book_status {
+    PARSING
+    PARSED
+    PROCESSING_FACTS
+    COMPLETED
+    ERROR
+}
+
+model book {
+    id         String   @id @default(cuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
+    title       String
+    author      String?
+    isbn        String?     @unique
+    external_id String? // For external book database IDs
+    status      book_status @default(PARSING)
+    file_path   String? // Path to the original book file
+    total_pages Int         @default(0)
+
+    // Rela ions
+    chapters chapter[]
+
+    @@index([status])
+    @@index([author])
+    @@index([title])
+}
+
+model chapter {
+    id         String   @id @default(cuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
+    title          String
+    chapter_number Int
+    content        String
+    page_start     Int?
+    page_end       Int? // Foreign keys     relations
+    book_id        String
+    book           book   @relation(fields: [book_id], references: [id], onDelete: Cascade)
+    facts          fact[]
+
+    @@index([book_id])
+    @@index([book_id, chapter_number])
+}
+
+model fact {
+    id         String   @id @default(cuid())
+    text       String
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
+    // Foreign keys and relations
+    embedding_id String
+    embedding    ai_cached_embedding @relation(fields: [embedding_id], references: [id], onDelete: Cascade)
+    chapter_id   String
+    chapter      chapter             @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+
+    @@index([embedding_id, chapter_id])
+    @@index([chapter_id, embedding_id])
+    @@index([embedding_id])
+    @@index([chapter_id])
+}
+
+enum embedding_feature_type {
+    FACT
+}
+
+model ai_cached_embedding {
+    id         String   @id @default(cuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
+    embedding    Unsupported("vector(512)")
+    text         String                     @unique
+    feature_type embedding_feature_type[]   @default([]) // use this to filter by feature first
+
+    ai_embedding_search_diagnostics ai_embedding_search_diagnostic[]
+    facts                           fact[]
+
+    @@index([feature_type])
+}
+
+model ai_embedding_search_diagnostic {
+    id         String   @id @default(cuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
+    embedded_content_results String[]
+    similarity_type          vector_similarity_type
+    min_similarity           Float
+    search_text              String?
+    search_time_ms           Int
+    limit                    Int
+
+    // Foreign keys and relations
+    search_embedding_id String
+    search_embedding    ai_cached_embedding @relation(fields: [search_embedding_id], references: [id], onDelete: Cascade)
+
+    @@index([similarity_type])
+}
