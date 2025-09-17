@@ -81,7 +81,7 @@ model chapter {
     page_start     Int?
     page_end       Int? // Foreign keys     relations
     book_id        String
-    book           book   @relation(fields: [book_id], references: [id], onDelete: Cascade)
+    book           book                         @relation(fields: [book_id], references: [id], onDelete: Cascade)
     facts          fact[]
     diagnostics    chapter_parsing_diagnostic[]
 
@@ -94,16 +94,16 @@ model chapter_parsing_diagnostic {
     created_at DateTime @default(now())
     updated_at DateTime @default(now()) @updatedAt
 
-    chapter_title                String
-    chapter_parsing_status       diagnostic_status @default(TODO)
-    facts_extraction_status      diagnostic_status @default(TODO)
-    fact_page_numbers_status     diagnostic_status @default(TODO)
-    error_message                String?
-    facts_count                  Int                @default(0)
-    facts_with_page_numbers      Int                @default(0)
+    chapter_title            String
+    chapter_parsing_status   diagnostic_status @default(TODO)
+    facts_extraction_status  diagnostic_status @default(TODO)
+    fact_page_numbers_status diagnostic_status @default(TODO)
+    error_message            String?
+    facts_count              Int               @default(0)
+    facts_with_page_numbers  Int               @default(0)
 
     // Foreign keys and relations
-    chapter_id String
+    chapter_id String  @unique
     chapter    chapter @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
 
     @@index([chapter_id])

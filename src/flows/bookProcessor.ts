@@ -1,7 +1,8 @@
 import { parseEPUBBook } from "../epub/parser";
 import { formatBookIndex, searchInBookIndex } from "../epub/utils";
 import { processChapter } from "./chapterProcessor";
-import { EPUBParseResult } from "../epub/types";
+import { getBookDiagnosticStats } from "../queries/diagnostics";
+import { prisma } from "../queries/prisma";
 
 // Example usage function
 export async function exampleUsage() {
@@ -120,6 +121,32 @@ export async function exampleUsage() {
         console.log(`📝 Note: Processed only chapter ${justChapter} of ${totalChapters} total chapters`);
       } else if (maxChapters && maxChapters < totalChapters) {
         console.log(`📝 Note: Processed ${chaptersToProcess} of ${totalChapters} total chapters`);
+      }
+
+      // Show diagnostic statistics
+      try {
+        const book = await prisma.book.findFirst({
+          where: { file_path: filePath },
+        });
+        
+        if (book) {
+          const diagnosticStats = await getBookDiagnosticStats(book.id);
+          console.log(`\n📊 Diagnostic Statistics:`);
+          console.log(`📖 Chapters parsed: ${diagnosticStats.chaptersParsed}/${diagnosticStats.totalChapters}`);
+          console.log(`🤖 Facts extracted: ${diagnosticStats.factsExtracted}/${diagnosticStats.totalChapters}`);
+          console.log(`📄 Page numbers assigned: ${diagnosticStats.pageNumbersAssigned}/${diagnosticStats.totalChapters}`);
+          console.log(`📝 Total facts: ${diagnosticStats.totalFacts}`);
+          console.log(`🔢 Facts with page numbers: ${diagnosticStats.totalFactsWithPageNumbers}`);
+          
+          if (diagnosticStats.failedChapters > 0 || diagnosticStats.failedFactsExtraction > 0 || diagnosticStats.failedPageNumbers > 0) {
+            console.log(`\n❌ Failures:`);
+            if (diagnosticStats.failedChapters > 0) console.log(`  • Chapter parsing: ${diagnosticStats.failedChapters}`);
+            if (diagnosticStats.failedFactsExtraction > 0) console.log(`  • Facts extraction: ${diagnosticStats.failedFactsExtraction}`);
+            if (diagnosticStats.failedPageNumbers > 0) console.log(`  • Page numbers: ${diagnosticStats.failedPageNumbers}`);
+          }
+        }
+      } catch (error) {
+        console.log(`⚠️ Could not retrieve diagnostic statistics: ${error}`);
       }
     }
 
