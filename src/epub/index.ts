@@ -3,3 +3,4 @@ export * from "./types";
 export * from "./parser";
 export * from "./content";
 export * from "./utils";
+export * from "./totalPages";

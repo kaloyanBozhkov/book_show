@@ -4,6 +4,8 @@ import { processChapter } from "./chapterProcessor";
 import { getBookDiagnosticStats } from "../queries/diagnostics";
 import { prisma } from "../queries/prisma";
 import { updateBookStatusByFilePath } from "../queries/books";
+import { getTotalPagesFromLastChapter } from "../epub/totalPages";
+
 
 // Example usage function
 export async function exampleUsage() {
@@ -76,6 +78,20 @@ export async function exampleUsage() {
     console.log("✅ Book Index extracted successfully:");
     console.log(formatBookIndex(result.data));
 
+    // Calculate total pages from the last chapter before processing
+    let totalPages: number | null = null;
+    try {
+      console.log("🔍 Calculating total pages from last chapter...");
+      totalPages = await getTotalPagesFromLastChapter(result.epub, result.data);
+      if (totalPages && totalPages > 0) {
+        console.log(`📖 Total pages determined: ${totalPages}`);
+      } else {
+        console.log("⚠️ Could not determine total pages from last chapter");
+      }
+    } catch (error) {
+      console.error("❌ Error calculating total pages:", error);
+    }
+
     // Process chapters (with optional limit or specific chapter)
     if (result.data.entries.length > 0) {
       const totalChapters = result.data.entries.length;
@@ -125,7 +141,7 @@ export async function exampleUsage() {
         );
 
         try {
-          const success = await processChapter(result, chapter);
+          const success = await processChapter(result, chapter, totalPages);
           if (success) {
             successCount++;
             console.log(`✅ Chapter ${displayIndex} processed successfully!`);
@@ -180,6 +196,7 @@ export async function exampleUsage() {
           console.log(
             `🔢 Facts with page numbers: ${diagnosticStats.totalFactsWithPageNumbers}`
           );
+          console.log(`📚 Total pages: ${book.total_pages}`);
 
           if (
             diagnosticStats.failedChapters > 0 ||
