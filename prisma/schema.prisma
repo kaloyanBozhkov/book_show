@@ -43,6 +43,12 @@ enum book_status {
     ERROR
 }
 
+enum diagnostic_status {
+    TODO
+    SUCCESS
+    FAILED
+}
+
 model book {
     id         String   @id @default(cuid())
     created_at DateTime @default(now())
@@ -77,9 +83,33 @@ model chapter {
     book_id        String
     book           book   @relation(fields: [book_id], references: [id], onDelete: Cascade)
     facts          fact[]
+    diagnostics    chapter_parsing_diagnostic[]
 
     @@index([book_id])
     @@index([book_id, chapter_number])
+}
+
+model chapter_parsing_diagnostic {
+    id         String   @id @default(cuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
+    chapter_title                String
+    chapter_parsing_status       diagnostic_status @default(TODO)
+    facts_extraction_status      diagnostic_status @default(TODO)
+    fact_page_numbers_status     diagnostic_status @default(TODO)
+    error_message                String?
+    facts_count                  Int                @default(0)
+    facts_with_page_numbers      Int                @default(0)
+
+    // Foreign keys and relations
+    chapter_id String
+    chapter    chapter @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+
+    @@index([chapter_id])
+    @@index([chapter_parsing_status])
+    @@index([facts_extraction_status])
+    @@index([fact_page_numbers_status])
 }
 
 model fact {
