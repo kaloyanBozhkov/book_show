@@ -3,6 +3,7 @@ import { formatBookIndex, searchInBookIndex } from "../epub/utils";
 import { processChapter } from "./chapterProcessor";
 import { getBookDiagnosticStats } from "../queries/diagnostics";
 import { prisma } from "../queries/prisma";
+import { updateBookStatusByFilePath } from "../queries/books";
 
 // Example usage function
 export async function exampleUsage() {
@@ -12,26 +13,38 @@ export async function exampleUsage() {
 
   if (!filePath) {
     console.error("❌ Please provide a filepath as an argument");
-    console.log("Usage: npm start <path-to-epub-file> [stop-at-chapter|just-X]");
+    console.log(
+      "Usage: npm start <path-to-epub-file> [stop-at-chapter|just-X]"
+    );
     console.log("Examples:");
-    console.log("  npm start /path/to/your/book.epub                    # Process all chapters");
-    console.log("  npm start /path/to/your/book.epub 3                  # Process first 3 chapters");
-    console.log("  npm start /path/to/your/book.epub just-5             # Process only chapter 5");
+    console.log(
+      "  npm start /path/to/your/book.epub                    # Process all chapters"
+    );
+    console.log(
+      "  npm start /path/to/your/book.epub 3                  # Process first 3 chapters"
+    );
+    console.log(
+      "  npm start /path/to/your/book.epub just-5             # Process only chapter 5"
+    );
     process.exit(1);
   }
 
   // Parse and validate the stop-at-chapter parameter
   let maxChapters: number | undefined;
   let justChapter: number | undefined;
-  
+
   if (stopAtChapter) {
     // Check if it's a "just-X" format
-    if (stopAtChapter.startsWith('just-')) {
+    if (stopAtChapter.startsWith("just-")) {
       const chapterNum = stopAtChapter.substring(5); // Remove "just-" prefix
       const parsedChapter = parseInt(chapterNum);
       if (isNaN(parsedChapter) || parsedChapter < 1) {
-        console.error("❌ Invalid chapter number after 'just-'. Must be a positive integer.");
-        console.log("Usage: npm start <path-to-epub-file> [stop-at-chapter|just-X]");
+        console.error(
+          "❌ Invalid chapter number after 'just-'. Must be a positive integer."
+        );
+        console.log(
+          "Usage: npm start <path-to-epub-file> [stop-at-chapter|just-X]"
+        );
         console.log("Example: npm start /path/to/your/book.epub just-3");
         process.exit(1);
       }
@@ -41,8 +54,12 @@ export async function exampleUsage() {
       // Regular stop-at-chapter format
       const parsedChapter = parseInt(stopAtChapter);
       if (isNaN(parsedChapter) || parsedChapter < 1) {
-        console.error("❌ Invalid chapter number. Must be a positive integer or 'just-X' format.");
-        console.log("Usage: npm start <path-to-epub-file> [stop-at-chapter|just-X]");
+        console.error(
+          "❌ Invalid chapter number. Must be a positive integer or 'just-X' format."
+        );
+        console.log(
+          "Usage: npm start <path-to-epub-file> [stop-at-chapter|just-X]"
+        );
         console.log("Example: npm start /path/to/your/book.epub 3");
         console.log("Example: npm start /path/to/your/book.epub just-3");
         process.exit(1);
@@ -65,37 +82,47 @@ export async function exampleUsage() {
       let chaptersToProcess: number;
       let startIndex = 0;
       let endIndex: number;
-      
+
       if (justChapter) {
         // Process only a specific chapter
         if (justChapter > totalChapters) {
-          console.error(`❌ Chapter ${justChapter} does not exist. Book has only ${totalChapters} chapters.`);
+          console.error(
+            `❌ Chapter ${justChapter} does not exist. Book has only ${totalChapters} chapters.`
+          );
           process.exit(1);
         }
         startIndex = justChapter - 1; // Convert to 0-based index
         endIndex = justChapter;
         chaptersToProcess = 1;
-        console.log(`\n🎯 Processing only chapter ${justChapter}: ${result.data.entries[startIndex].title}`);
+        console.log(
+          `\n🎯 Processing only chapter ${justChapter}: ${result.data.entries[startIndex].title}`
+        );
       } else {
         // Process with optional limit
-        chaptersToProcess = maxChapters ? Math.min(maxChapters, totalChapters) : totalChapters;
+        chaptersToProcess = maxChapters
+          ? Math.min(maxChapters, totalChapters)
+          : totalChapters;
         endIndex = chaptersToProcess;
-        
+
         if (maxChapters && maxChapters < totalChapters) {
-          console.log(`\n🚀 Processing first ${chaptersToProcess} of ${totalChapters} chapters...`);
+          console.log(
+            `\n🚀 Processing first ${chaptersToProcess} of ${totalChapters} chapters...`
+          );
         } else {
           console.log(`\n🚀 Processing all ${totalChapters} chapters...`);
         }
       }
-      
+
       let successCount = 0;
       let failureCount = 0;
-      
+
       for (let i = startIndex; i < endIndex; i++) {
         const chapter = result.data.entries[i];
         const displayIndex = i + 1;
         const displayTotal = justChapter ? 1 : chaptersToProcess;
-        console.log(`\n📖 [${displayIndex}/${displayTotal}] Processing: ${chapter.title}`);
+        console.log(
+          `\n📖 [${displayIndex}/${displayTotal}] Processing: ${chapter.title}`
+        );
 
         try {
           const success = await processChapter(result, chapter);
@@ -111,16 +138,24 @@ export async function exampleUsage() {
           console.error(`❌ Error processing chapter ${displayIndex}:`, error);
         }
       }
-      
+
       console.log(`\n📊 Processing Summary:`);
       console.log(`✅ Successfully processed: ${successCount} chapters`);
       console.log(`❌ Failed to process: ${failureCount} chapters`);
-      console.log(`📈 Success rate: ${((successCount / chaptersToProcess) * 100).toFixed(1)}%`);
-      
+      console.log(
+        `📈 Success rate: ${((successCount / chaptersToProcess) * 100).toFixed(
+          1
+        )}%`
+      );
+
       if (justChapter) {
-        console.log(`📝 Note: Processed only chapter ${justChapter} of ${totalChapters} total chapters`);
+        console.log(
+          `📝 Note: Processed only chapter ${justChapter} of ${totalChapters} total chapters`
+        );
       } else if (maxChapters && maxChapters < totalChapters) {
-        console.log(`📝 Note: Processed ${chaptersToProcess} of ${totalChapters} total chapters`);
+        console.log(
+          `📝 Note: Processed ${chaptersToProcess} of ${totalChapters} total chapters`
+        );
       }
 
       // Show diagnostic statistics
@@ -128,25 +163,68 @@ export async function exampleUsage() {
         const book = await prisma.book.findFirst({
           where: { file_path: filePath },
         });
-        
+
         if (book) {
           const diagnosticStats = await getBookDiagnosticStats(book.id);
           console.log(`\n📊 Diagnostic Statistics:`);
-          console.log(`📖 Chapters parsed: ${diagnosticStats.chaptersParsed}/${diagnosticStats.totalChapters}`);
-          console.log(`🤖 Facts extracted: ${diagnosticStats.factsExtracted}/${diagnosticStats.totalChapters}`);
-          console.log(`📄 Page numbers assigned: ${diagnosticStats.pageNumbersAssigned}/${diagnosticStats.totalChapters}`);
+          console.log(
+            `📖 Chapters parsed: ${diagnosticStats.chaptersParsed}/${diagnosticStats.totalChapters}`
+          );
+          console.log(
+            `🤖 Facts extracted: ${diagnosticStats.factsExtracted}/${diagnosticStats.totalChapters}`
+          );
+          console.log(
+            `📄 Page numbers assigned: ${diagnosticStats.pageNumbersAssigned}/${diagnosticStats.totalChapters}`
+          );
           console.log(`📝 Total facts: ${diagnosticStats.totalFacts}`);
-          console.log(`🔢 Facts with page numbers: ${diagnosticStats.totalFactsWithPageNumbers}`);
-          
-          if (diagnosticStats.failedChapters > 0 || diagnosticStats.failedFactsExtraction > 0 || diagnosticStats.failedPageNumbers > 0) {
+          console.log(
+            `🔢 Facts with page numbers: ${diagnosticStats.totalFactsWithPageNumbers}`
+          );
+
+          if (
+            diagnosticStats.failedChapters > 0 ||
+            diagnosticStats.failedFactsExtraction > 0 ||
+            diagnosticStats.failedPageNumbers > 0
+          ) {
             console.log(`\n❌ Failures:`);
-            if (diagnosticStats.failedChapters > 0) console.log(`  • Chapter parsing: ${diagnosticStats.failedChapters}`);
-            if (diagnosticStats.failedFactsExtraction > 0) console.log(`  • Facts extraction: ${diagnosticStats.failedFactsExtraction}`);
-            if (diagnosticStats.failedPageNumbers > 0) console.log(`  • Page numbers: ${diagnosticStats.failedPageNumbers}`);
+            if (diagnosticStats.failedChapters > 0)
+              console.log(
+                `  • Chapter parsing: ${diagnosticStats.failedChapters}`
+              );
+            if (diagnosticStats.failedFactsExtraction > 0)
+              console.log(
+                `  • Facts extraction: ${diagnosticStats.failedFactsExtraction}`
+              );
+            if (diagnosticStats.failedPageNumbers > 0)
+              console.log(
+                `  • Page numbers: ${diagnosticStats.failedPageNumbers}`
+              );
           }
         }
       } catch (error) {
         console.log(`⚠️ Could not retrieve diagnostic statistics: ${error}`);
+      }
+
+      // Update book status based on processing results
+      try {
+        if (failureCount === 0) {
+          // All chapters processed successfully
+          await updateBookStatusByFilePath(filePath, "COMPLETED");
+          console.log(`📚 Updated book status to COMPLETED`);
+        } else if (successCount === 0) {
+          // All chapters failed
+          await updateBookStatusByFilePath(filePath, "ERROR");
+          console.log(`📚 Updated book status to ERROR (all chapters failed)`);
+        } else {
+          // Some chapters succeeded, some failed - still mark as completed
+          // since we processed what we could
+          await updateBookStatusByFilePath(filePath, "COMPLETED");
+          console.log(
+            `📚 Updated book status to COMPLETED (${failureCount} chapters failed)`
+          );
+        }
+      } catch (error) {
+        console.log(`⚠️ Could not update book status: ${error}`);
       }
     }
 
@@ -160,5 +238,13 @@ export async function exampleUsage() {
     }
   } else {
     console.error("❌ Failed to extract book index:", result.error);
+
+    // Update book status to ERROR if EPUB parsing failed
+    try {
+      await updateBookStatusByFilePath(filePath, "ERROR");
+      console.log(`📚 Updated book status to ERROR (EPUB parsing failed)`);
+    } catch (error) {
+      console.log(`⚠️ Could not update book status: ${error}`);
+    }
   }
 }

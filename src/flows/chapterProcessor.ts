@@ -3,7 +3,6 @@ import { getChapterMemory } from "../ai/memory";
 import { extractFactPageNumbers } from "../ai/extractFactPageNumbers";
 import { updateFactPageNumbersForChapter } from "../queries/facts/updateFactPageNumbers";
 import { prisma } from "../queries/prisma";
-import { parsePageNumbers } from "../helpers/pageParser";
 import { EPUBParseResult } from "../epub/types";
 import { BookIndexEntry } from "../epub/types";
 import { extractChapterContent } from "../epub/content";
@@ -13,7 +12,7 @@ import {
   updateFactsExtractionStatus, 
   updateFactPageNumbersStatus 
 } from "../queries/diagnostics";
-import * as path from "path";
+import { setBookProcessingFacts, createOrFindBook, createOrFindChapter } from "../queries/books";
 
 /**
  * Processes a single chapter: extracts content, extracts facts, and stores them in the database
@@ -38,6 +37,10 @@ export async function processChapter(
 
     // Create or find the book in database first
     const book = await createOrFindBook(epubResult.data);
+
+    // Set book status to PROCESSING_FACTS when we start processing
+    await setBookProcessingFacts(book.id);
+    console.log(`📚 Updated book status to PROCESSING_FACTS`);
 
     // Create or find the chapter in database
     const chapter = await createOrFindChapter(
@@ -150,88 +153,3 @@ export async function processChapter(
   }
 }
 
-/**
- * Creates or finds a book in the database
- */
-async function createOrFindBook(bookData: any) {
-  const filePath = bookData.filePath!;
-
-  // Try to find existing book
-  let book = await prisma.book.findFirst({
-    where: {
-      OR: [{ file_path: filePath }, { title: bookData.title }],
-    },
-  });
-
-  // Create new book if not found
-  if (!book) {
-    book = await prisma.book.create({
-      data: {
-        title: bookData.title || path.basename(filePath, ".epub"),
-        author: bookData.author || null,
-        file_path: filePath,
-        status: "PARSING",
-      },
-    });
-    console.log(`📚 Created new book: ${book.title}`);
-  } else {
-    console.log(`📚 Found existing book: ${book.title}`);
-  }
-
-  return book;
-}
-
-/**
- * Creates or finds a chapter in the database
- */
-async function createOrFindChapter(
-  bookId: string,
-  chapterEntry: BookIndexEntry,
-  content: string
-) {
-  // Parse page numbers from chapter content
-  const pageRange = parsePageNumbers(content);
-  
-  // Try to find existing chapter
-  let chapter = await prisma.chapter.findFirst({
-    where: {
-      book_id: bookId,
-      title: chapterEntry.title,
-    },
-  });
-
-  // Create new chapter if not found
-  if (!chapter) {
-    chapter = await prisma.chapter.create({
-      data: {
-        title: chapterEntry.title,
-        chapter_number: parseInt(chapterEntry.id.replace(/\D/g, "")) || 1,
-        content: content,
-        page_start: pageRange.pageStart,
-        page_end: pageRange.pageEnd,
-        book_id: bookId,
-      },
-    });
-    console.log(`📄 Created new chapter: ${chapter.title}`);
-    if (pageRange.pageStart && pageRange.pageEnd) {
-      console.log(`📖 Chapter spans pages ${pageRange.pageStart} to ${pageRange.pageEnd}`);
-    } else {
-      console.log(`⚠️ No page numbers found in chapter content`);
-    }
-  } else {
-    console.log(`📄 Found existing chapter: ${chapter.title}`);
-    // Update page numbers if they weren't set before
-    if (!chapter.page_start && !chapter.page_end && (pageRange.pageStart || pageRange.pageEnd)) {
-      chapter = await prisma.chapter.update({
-        where: { id: chapter.id },
-        data: {
-          page_start: pageRange.pageStart,
-          page_end: pageRange.pageEnd,
-        },
-      });
-      console.log(`📖 Updated page numbers: ${pageRange.pageStart} to ${pageRange.pageEnd}`);
-    }
-  }
-
-  return chapter;
-}
